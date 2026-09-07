@@ -5,10 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#090D16">
   <meta name="description" content="0oo0 Fractal Engine - Real-time GPU fractal shader sandbox with GLSL live coding, deep panning, zoom, audio pulse, and presets.">
-  <title>0oo0 Fractals</title>
+  <title>mobilecode</title>
   
-  <link rel="manifest" href="./manifest.json">
-  <link rel="apple-touch-icon" href="./icon-192.png">
+  <link rel="manifest" href="./manifest.json>
   <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
   <link rel="icon" type="image/png" sizes="512x512" href="./icon-512.png">
   <link rel="stylesheet" href="./styles.css">
@@ -19,7 +18,7 @@
     <header class="app-header">
       <div class="brand-section">
         <div class="pulse-dot"></div>
-        <span class="brand-title">0oo0 · FRACTAL</span>
+        <span class="brand-title">0oo0</span>
       </div>
 
       <div class="header-actions">
@@ -184,14 +183,7 @@
 
   <!-- Standalone Inline ES Module Script -->
   <script type="module">
-    // --- Register Service Worker for Offline PWA ---
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js').catch((err) => {
-          console.warn('SW registration failed:', err);
-        });
-      });
-    }
+    
 
     // --- Vertex Shader ---
     const VERTEX_SHADER_SRC = `
@@ -991,6 +983,15 @@
     }
 
     requestAnimationFrame(render);
+    
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch((err) => {
+          console.warn('SW registration failed:', err);
+        });
+      });
+    }
+
   </script>
 </body>
 </html>
