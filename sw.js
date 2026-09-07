@@ -1,5 +1,5 @@
 // 0oo0 Fractal Engine - Service Worker
-const CACHE_NAME = '0oo0-fractal-v1';
+const CACHE_NAME = 'mobilecode-v1';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
