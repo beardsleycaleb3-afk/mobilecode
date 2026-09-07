@@ -1,6 +1,6 @@
 {
-  "name": "0oo0 Fractal Engine",
-  "short_name": "0oo0 Fractal",
+  "name": "mobilecode",
+  "short_name": "mobilecode",
   "description": "Real-time GPU mathematical fractal explorer and shader sandbox",
   "start_url": "./index.html",
   "scope": "./",
