@@ -1,0 +1,36 @@
+{
+  "name": "0oo0 Fractal Engine",
+  "short_name": "0oo0 Fractal",
+  "description": "Real-time GPU mathematical fractal explorer and shader sandbox",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#05070e",
+  "theme_color": "#090d16",
+  "categories": ["graphics", "education", "utilities"],
+  "icons": [
+    {
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./icon192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "./icon512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

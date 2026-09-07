@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#090D16">
+  <meta name="description" content="0oo0 Fractal Engine - Real-time GPU fractal shader sandbox with GLSL live coding, deep panning, zoom, audio pulse, and presets.">
+  <title>0oo0 Fractals</title>
+  
+  <link rel="manifest" href="./manifest.json">
+  <link rel="apple-touch-icon" href="./icon-192.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="./icon-512.png">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="app-viewport">
+    <!-- Top Header -->
+    <header class="app-header">
+      <div class="brand-section">
+        <div class="pulse-dot"></div>
+        <span class="brand-title">0oo0 · FRACTAL</span>
+      </div>
+
+      <div class="header-actions">
+        <!-- Preset Dropdown -->
+        <div class="preset-selector">
+          <button id="preset-btn" class="preset-btn" title="Choose Preset">
+            <span id="preset-name" class="preset-btn-text">Mandelbrot</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M7 10l5 5 5-5z"/>
+            </svg>
+          </button>
+          <div id="preset-menu" class="preset-menu">
+            <!-- Populated dynamically via ES module -->
+          </div>
+        </div>
+
+        <!-- Info Button -->
+        <button id="info-btn" class="icon-btn" title="About Engine">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+          </svg>
+        </button>
+
+        <!-- Mode Toggle (Visual / Code) -->
+        <button id="mode-toggle-btn" class="mode-toggle-btn" title="Switch to Code Mode">
+          <svg id="mode-icon" width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/>
+          </svg>
+          <span id="mode-text">CODE</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Stage Area -->
+    <main class="stage-container">
+      <!-- High-Resolution WebGL Canvas (720x1440 Internal Resolution) -->
+      <canvas id="gl-canvas" width="720" height="1440"></canvas>
+
+      <!-- HUD Badges -->
+      <div class="hud-badge hud-top-left">
+        Drag to pan · Pinch to zoom
+      </div>
+      <div id="coords-badge" class="hud-badge hud-top-right">
+        X:0.00 Y:0.00 Z:50
+      </div>
+
+      <!-- Paused Notification -->
+      <div id="paused-banner" class="paused-banner">
+        FRACTAL PAUSED · PRESS START
+      </div>
+
+      <!-- Compilation Error Toast -->
+      <div id="error-toast" class="error-toast">
+        <span id="error-msg">Shader compilation error</span>
+        <button id="error-close" class="error-close">&times;</button>
+      </div>
+
+      <!-- Code Editor Mode -->
+      <div id="code-panel" class="code-panel">
+        <div class="code-panel-tabs">
+          <div class="tabs-group">
+            <button class="code-tab active" data-tab="draw">draw() [GLSL]</button>
+            <button class="code-tab" data-tab="init">init()</button>
+            <button class="code-tab" data-tab="update">update()</button>
+          </div>
+          <div class="code-actions">
+            <button id="code-revert-btn" class="code-btn code-btn-revert">Revert</button>
+            <button id="code-apply-btn" class="code-btn code-btn-apply">Apply</button>
+          </div>
+        </div>
+        <div class="code-editor-wrapper">
+          <textarea id="glsl-textarea" spellcheck="false"></textarea>
+          <div id="code-status" class="code-editor-status">Live GLSL Editor</div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Bottom Control Deck -->
+    <footer class="control-deck">
+      <div class="deck-row-buttons">
+        <button id="btn-play-pause" class="deck-btn btn-play-pause running">
+          <svg id="play-pause-icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+          </svg>
+          <span id="play-pause-text">PAUSE</span>
+        </button>
+
+        <button id="btn-reset" class="deck-btn btn-reset">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+          </svg>
+          <span>RESET</span>
+        </button>
+
+        <button id="btn-audio" class="deck-btn btn-audio">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+          </svg>
+          <span id="audio-text">AUDIO</span>
+        </button>
+      </div>
+
+      <!-- Sliders: Zoom, Color, Morph -->
+      <div class="sliders-card">
+        <div class="slider-column">
+          <div class="slider-header">
+            <span class="slider-label">ZOOM</span>
+            <span id="val-p1" class="slider-val">50</span>
+          </div>
+          <input type="range" id="slider-p1" class="custom-range" min="0" max="100" value="50">
+        </div>
+
+        <div class="slider-column">
+          <div class="slider-header">
+            <span class="slider-label">COLOR</span>
+            <span id="val-p2" class="slider-val">50</span>
+          </div>
+          <input type="range" id="slider-p2" class="custom-range" min="0" max="100" value="50">
+        </div>
+
+        <div class="slider-column">
+          <div class="slider-header">
+            <span class="slider-label">MORPH</span>
+            <span id="val-p3" class="slider-val">50</span>
+          </div>
+          <input type="range" id="slider-p3" class="custom-range" min="0" max="100" value="50">
+        </div>
+      </div>
+    </footer>
+
+    <!-- Info Modal -->
+    <div id="info-modal" class="modal-overlay">
+      <div class="modal-box">
+        <div class="modal-title">About 0oo0 Fractal Engine</div>
+        <div class="modal-body">
+          <p>Real-time GPU fractal shader sandbox rendered in hardware-accelerated WebGL with GLSL live coding, deep panning, zoom, and audio pulse.</p>
+          <div class="bullet-item">
+            <span class="bullet-dot">•</span>
+            <div><strong>Resolution:</strong> Viewport formatted for 350×720 mobile aspect ratio with native 720×1440 supersampled internal rendering buffer.</div>
+          </div>
+          <div class="bullet-item">
+            <span class="bullet-dot">•</span>
+            <div><strong>Presets:</strong> Mandelbrot Smooth, Burning Ship, Julia Orbit, Kaleidoscopic IFS, and Newton Basin.</div>
+          </div>
+          <div class="bullet-item">
+            <span class="bullet-dot">•</span>
+            <div><strong>Pan & Zoom:</strong> Drag with mouse or finger to pan coordinates. Pinch or scroll wheel to zoom into infinite boundary filaments.</div>
+          </div>
+          <div class="bullet-item">
+            <span class="bullet-dot">•</span>
+            <div><strong>Live GLSL Code:</strong> Tap CODE to edit shaders live with instant compilation and syntax verification.</div>
+          </div>
+          <div class="bullet-item">
+            <span class="bullet-dot">•</span>
+            <div><strong>Audio Reactivity:</strong> Tap AUDIO to synthesize dynamic rhythmic audio harmonic waves that modulate fractal palettes and orbit traps.</div>
+          </div>
+        </div>
+        <button id="modal-close-btn" class="modal-close-btn">GOT IT</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Standalone Inline ES Module Script -->
+  <script type="module">
+    // --- Register Service Worker for Offline PWA ---
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch((err) => {
+          console.warn('SW registration failed:', err);
+        });
+      });
+    }
+
+    // --- Vertex Shader ---
+    const VERTEX_SHADER_SRC = `
+      attribute vec2 a_pos;
+      varying vec2 v_uv;
+      void main() {
+        v_uv = (a_pos + 1.0) * 0.5;
+        gl_Position = vec4(a_pos, 0.0, 1.0);
+      }
+    `;
+
+    // --- Shader Presets ---
+    const PRESETS = [
+      {
+        id: 'mandelbrot',
+        name: 'Mandelbrot Smooth',
+        category: 'Quadratic Polynomial',
+        defaultP1: 50.0,
+        defaultP2: 50.0,
+        defaultP3: 50.0,
+        fragmentShader: `
+          precision highp float;
+          uniform vec2 u_res;
+          uniform float u_time;
+          uniform float u_p1;
+          uniform float u_p2;
+          uniform float u_p3;
+          uniform vec2 u_pan;
+          uniform float u_audio;
+          varying vec2 v_uv;
+
+          void main() {
+            vec2 st = (gl_FragCoord.xy - 0.5 * u_res) / min(u_res.x, u_res.y);
+            float zoom = pow(1.08, u_p1);
+            vec2 c = st * (3.5 / zoom) + u_pan - vec2(0.65, 0.0);
+            
+            vec2 z = vec2(0.0);
+            float n = 0.0;
+            const float MAX_ITERS = 130.0;
+            float trap = 1e5;
+
+            for (float i = 0.0; i < MAX_ITERS; i += 1.0) {
+              if (dot(z, z) > 4.0) { n = i; break; }
+              z = vec2(z.x * z.x - z.y * z.y, 2.0 * z.x * z.y) + c;
+              trap = min(trap, length(z));
+            }
+
+            if (n == 0.0) {
+              gl_FragColor = vec4(0.02, 0.03, 0.05, 1.0);
+            } else {
+              float sn = n - log2(max(1.0, log2(dot(z, z)))) + 4.0;
+              float t = sn * 0.06 + u_p2 * 0.04 + u_time * 0.08 + u_audio * 0.3;
+              vec3 col = 0.5 + 0.5 * cos(vec3(0.0, 1.2, 2.4) + t * 6.28318);
+              col += vec3(0.85, 0.25, 0.95) * exp(-trap * 3.5) * (0.5 + 0.5 * u_audio);
+              gl_FragColor = vec4(col, 1.0);
+            }
+          }
+        `
+      },
+      {
+        id: 'burningship',
+        name: 'Burning Ship',
+        category: 'Non-Analytic Set',
+        defaultP1: 42.0,
+        defaultP2: 55.0,
+        defaultP3: 35.0,
+        fragmentShader: `
+          precision highp float;
+          uniform vec2 u_res;
+          uniform float u_time;
+          uniform float u_p1;
+          uniform float u_p2;
+          uniform float u_p3;
+          uniform vec2 u_pan;
+          uniform float u_audio;
+          varying vec2 v_uv;
+
+          void main() {
+            vec2 st = (gl_FragCoord.xy - 0.5 * u_res) / min(u_res.x, u_res.y);
+            float zoom = pow(1.08, u_p1);
+            vec2 c = vec2(st.x, -st.y) * (2.8 / zoom) + u_pan - vec2(0.45, -0.5);
+            
+            vec2 z = vec2(0.0);
+            float n = 0.0;
+            const float MAX_ITERS = 120.0;
+            float trap = 1e5;
+
+            for (float i = 0.0; i < MAX_ITERS; i += 1.0) {
+              if (dot(z, z) > 8.0) { n = i; break; }
+              z = vec2(abs(z.x), abs(z.y));
+              z = vec2(z.x * z.x - z.y * z.y, 2.0 * z.x * z.y) + c;
+              trap = min(trap, abs(z.x) + abs(z.y));
+            }
+
+            if (n == 0.0) {
+              gl_FragColor = vec4(0.01, 0.01, 0.03, 1.0);
+            } else {
+              float sn = n - log2(max(1.0, log2(dot(z, z)))) + 4.0;
+              float t = sn * 0.05 + u_p2 * 0.03 + u_time * 0.05;
+              vec3 col = 0.5 + 0.5 * cos(vec3(0.1, 0.6, 1.2) + t * 6.28318);
+              col = mix(col, vec3(1.0, 0.45, 0.1), exp(-trap * 4.0) * (0.7 + 0.3 * u_audio));
+              gl_FragColor = vec4(col, 1.0);
+            }
+          }
+        `
+      },
+      {
+        id: 'julia',
+        name: 'Julia Orbit Morph',
+        category: 'Morphing Attractor',
+        defaultP1: 45.0,
+        defaultP2: 60.0,
+        defaultP3: 65.0,
+        fragmentShader: `
+          precision highp float;
+          uniform vec2 u_res;
+          uniform float u_time;
+          uniform float u_p1;
+          uniform float u_p2;
+          uniform float u_p3;
+          uniform vec2 u_pan;
+          uniform float u_audio;
+          varying vec2 v_uv;
+
+          void main() {
+            vec2 st = (gl_FragCoord.xy - 0.5 * u_res) / min(u_res.x, u_res.y);
+            float zoom = pow(1.08, u_p1);
+            vec2 z = st * (2.6 / zoom) + u_pan;
+            
+            float angle = u_p3 * 0.06 + u_time * 0.25;
+            vec2 c = vec2(-0.7269 + sin(angle) * 0.12, 0.1889 + cos(angle * 0.8) * 0.12);
+            
+            float n = 0.0;
+            const float MAX_ITERS = 120.0;
+            float trap = 1e5;
+
+            for (float i = 0.0; i < MAX_ITERS; i += 1.0) {
+              if (dot(z, z) > 4.0) { n = i; break; }
+              z = vec2(z.x * z.x - z.y * z.y, 2.0 * z.x * z.y) + c;
+              trap = min(trap, length(z));
+            }
+
+            if (n == 0.0) {
+              gl_FragColor = vec4(0.04, 0.01, 0.06, 1.0);
+            } else {
+              float sn = n - log2(max(1.0, log2(dot(z, z)))) + 4.0;
+              float t = sn * 0.05 + u_p2 * 0.04 + u_time * 0.1;
+              vec3 col = 0.5 + 0.5 * cos(vec3(2.0, 0.8, 0.2) + t * 6.28318);
+              col += vec3(0.2, 0.9, 0.9) * exp(-trap * 5.0) * (0.8 + 0.4 * u_audio);
+              gl_FragColor = vec4(col, 1.0);
+            }
+          }
+        `
+      },
+      {
+        id: 'ifs',
+        name: 'Kaleidoscopic IFS',
+        category: 'Folding Space',
+        defaultP1: 52.0,
+        defaultP2: 45.0,
+        defaultP3: 50.0,
+        fragmentShader: `
+          precision highp float;
+          uniform vec2 u_res;
+          uniform float u_time;
+          uniform float u_p1;
+          uniform float u_p2;
+          uniform float u_p3;
+          uniform vec2 u_pan;
+          uniform float u_audio;
+          varying vec2 v_uv;
+
+          mat2 rot(float a) {
+            float s = sin(a), c = cos(a);
+            return mat2(c, -s, s, c);
+          }
+
+          void main() {
+            vec2 st = (gl_FragCoord.xy - 0.5 * u_res) / min(u_res.x, u_res.y);
+            float zoom = pow(1.08, u_p1);
+            vec2 p = st * (3.0 / zoom) + u_pan;
+            
+            float t = u_time * 0.15 + u_p3 * 0.03;
+            float trap = 1e5;
+            float scale = 1.0;
+
+            for (int i = 0; i < 14; i++) {
+              p = abs(p) - vec2(0.45, 0.35 + u_audio * 0.1);
+              p = rot(t * 0.4 + float(i) * 0.15) * p;
+              p *= 1.35;
+              scale *= 1.35;
+              trap = min(trap, length(p) / scale);
+            }
+
+            vec3 col = 0.5 + 0.5 * cos(vec3(0.0, 1.5, 3.0) + trap * 12.0 + u_p2 * 0.05);
+            col += vec3(0.9, 0.2, 0.8) * exp(-trap * 30.0);
+            gl_FragColor = vec4(col, 1.0);
+          }
+        `
+      },
+      {
+        id: 'newton',
+        name: 'Newton Basin',
+        category: 'Complex Roots',
+        defaultP1: 46.0,
+        defaultP2: 50.0,
+        defaultP3: 40.0,
+        fragmentShader: `
+          precision highp float;
+          uniform vec2 u_res;
+          uniform float u_time;
+          uniform float u_p1;
+          uniform float u_p2;
+          uniform float u_p3;
+          uniform vec2 u_pan;
+          uniform float u_audio;
+          varying vec2 v_uv;
+
+          vec2 cdiv(vec2 a, vec2 b) {
+            float d = dot(b, b);
+            return vec2(dot(a, b), a.y * b.x - a.x * b.y) / d;
+          }
+
+          vec2 cmul(vec2 a, vec2 b) {
+            return vec2(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x);
+          }
+
+          void main() {
+            vec2 st = (gl_FragCoord.xy - 0.5 * u_res) / min(u_res.x, u_res.y);
+            float zoom = pow(1.08, u_p1);
+            vec2 z = st * (2.8 / zoom) + u_pan;
+
+            vec2 r1 = vec2(1.0, 0.0);
+            vec2 r2 = vec2(-0.5, 0.866025);
+            vec2 r3 = vec2(-0.5, -0.866025);
+
+            float n = 0.0;
+            const float MAX_ITERS = 45.0;
+
+            for (float i = 0.0; i < MAX_ITERS; i += 1.0) {
+              vec2 z2 = cmul(z, z);
+              vec2 z3 = cmul(z2, z);
+              vec2 f = z3 - vec2(1.0, 0.0);
+              vec2 fp = 3.0 * z2;
+              z -= cdiv(f, fp);
+              if (length(f) < 0.001) { n = i; break; }
+            }
+
+            vec3 col = vec3(0.05);
+            float d1 = length(z - r1);
+            float d2 = length(z - r2);
+            float d3 = length(z - r3);
+
+            if (d1 < d2 && d1 < d3) {
+              col = vec3(0.95, 0.25, 0.45);
+            } else if (d2 < d3) {
+              col = vec3(0.2, 0.85, 0.6);
+            } else {
+              col = vec3(0.25, 0.55, 0.95);
+            }
+
+            col *= (1.0 - n / MAX_ITERS);
+            col += (0.2 + 0.3 * u_audio) * cos(vec3(0.0, 1.0, 2.0) + u_p2 * 0.04);
+            gl_FragColor = vec4(col, 1.0);
+          }
+        `
+      }
+    ];
+
+    // --- State ---
+    const state = {
+      activePreset: PRESETS[0],
+      isRunning: true,
+      p1: PRESETS[0].defaultP1,
+      p2: PRESETS[0].defaultP2,
+      p3: PRESETS[0].defaultP3,
+      panX: 0.0,
+      panY: 0.0,
+      showCode: false,
+      activeCodeTab: 'draw',
+      editableCode: PRESETS[0].fragmentShader.trim(),
+      audioEnabled: false,
+      audioPulse: 0.0,
+      time: 0.0,
+      error: null
+    };
+
+    // --- DOM Elements ---
+    const canvas = document.getElementById('gl-canvas');
+    const presetBtn = document.getElementById('preset-btn');
+    const presetName = document.getElementById('preset-name');
+    const presetMenu = document.getElementById('preset-menu');
+    const infoBtn = document.getElementById('info-btn');
+    const infoModal = document.getElementById('info-modal');
+    const modalCloseBtn = document.getElementById('modal-close-btn');
+    const modeToggleBtn = document.getElementById('mode-toggle-btn');
+    const modeText = document.getElementById('mode-text');
+    const codePanel = document.getElementById('code-panel');
+    const glslTextarea = document.getElementById('glsl-textarea');
+    const codeTabs = document.querySelectorAll('.code-tab');
+    const codeRevertBtn = document.getElementById('code-revert-btn');
+    const codeApplyBtn = document.getElementById('code-apply-btn');
+    const codeStatus = document.getElementById('code-status');
+    const coordsBadge = document.getElementById('coords-badge');
+    const pausedBanner = document.getElementById('paused-banner');
+    const errorToast = document.getElementById('error-toast');
+    const errorMsg = document.getElementById('error-msg');
+    const errorClose = document.getElementById('error-close');
+
+    const btnPlayPause = document.getElementById('btn-play-pause');
+    const playPauseText = document.getElementById('play-pause-text');
+    const playPauseIcon = document.getElementById('play-pause-icon');
+    const btnReset = document.getElementById('btn-reset');
+    const btnAudio = document.getElementById('btn-audio');
+    const audioText = document.getElementById('audio-text');
+
+    const sliderP1 = document.getElementById('slider-p1');
+    const valP1 = document.getElementById('val-p1');
+    const sliderP2 = document.getElementById('slider-p2');
+    const valP2 = document.getElementById('val-p2');
+    const sliderP3 = document.getElementById('slider-p3');
+    const valP3 = document.getElementById('val-p3');
+
+    // --- WebGL Context & Shaders ---
+    let gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+    if (!gl) {
+      showError('WebGL is not supported on this browser/device.');
+    }
+
+    // Quad geometry covering the full screen
+    const quadBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, quadBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+      -1, -1,
+       1, -1,
+      -1,  1,
+      -1,  1,
+       1, -1,
+       1,  1
+    ]), gl.STATIC_DRAW);
+
+    let currentProgram = null;
+    let uniformLocs = {};
+
+    function compileShader(src, type) {
+      const shader = gl.createShader(type);
+      gl.shaderSource(shader, src);
+      gl.compileShader(shader);
+      if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        const info = gl.getShaderInfoLog(shader);
+        gl.deleteShader(shader);
+        throw new Error(info || 'Shader compilation failed');
+      }
+      return shader;
+    }
+
+    function buildProgram(fragSrc) {
+      const vShader = compileShader(VERTEX_SHADER_SRC, gl.VERTEX_SHADER);
+      const fShader = compileShader(fragSrc, gl.FRAGMENT_SHADER);
+      const program = gl.createProgram();
+      gl.attachShader(program, vShader);
+      gl.attachShader(program, fShader);
+      gl.linkProgram(program);
+
+      if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+        const info = gl.getProgramInfoLog(program);
+        gl.deleteProgram(program);
+        throw new Error(info || 'Shader link failed');
+      }
+
+      gl.deleteShader(vShader);
+      gl.deleteShader(fShader);
+
+      return program;
+    }
+
+    function initShaderProgram(fragSrc) {
+      try {
+        const prog = buildProgram(fragSrc);
+        if (currentProgram) gl.deleteProgram(currentProgram);
+        currentProgram = prog;
+        gl.useProgram(currentProgram);
+
+        const aPos = gl.getAttribLocation(currentProgram, 'a_pos');
+        gl.enableVertexAttribArray(aPos);
+        gl.bindBuffer(gl.ARRAY_BUFFER, quadBuffer);
+        gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+
+        uniformLocs = {
+          res: gl.getUniformLocation(currentProgram, 'u_res'),
+          time: gl.getUniformLocation(currentProgram, 'u_time'),
+          p1: gl.getUniformLocation(currentProgram, 'u_p1'),
+          p2: gl.getUniformLocation(currentProgram, 'u_p2'),
+          p3: gl.getUniformLocation(currentProgram, 'u_p3'),
+          pan: gl.getUniformLocation(currentProgram, 'u_pan'),
+          audio: gl.getUniformLocation(currentProgram, 'u_audio')
+        };
+
+        hideError();
+        return true;
+      } catch (err) {
+        showError(err.message);
+        return false;
+      }
+    }
+
+    // Initialize with default preset
+    initShaderProgram(state.activePreset.fragmentShader);
+    glslTextarea.value = state.editableCode;
+
+    // --- Web Audio Synthesizer for Audio Reactivity ---
+    let audioCtx = null;
+    let synthOsc = null;
+    let synthGain = null;
+    let audioInterval = null;
+
+    function toggleAudio() {
+      state.audioEnabled = !state.audioEnabled;
+      if (state.audioEnabled) {
+        btnAudio.classList.add('active');
+        audioText.textContent = 'BEAT ON';
+        startAudioSynth();
+      } else {
+        btnAudio.classList.remove('active');
+        audioText.textContent = 'AUDIO';
+        stopAudioSynth();
+        state.audioPulse = 0.0;
+      }
+    }
+
+    function startAudioSynth() {
+      try {
+        if (!audioCtx) {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+
+        synthOsc = audioCtx.createOscillator();
+        synthGain = audioCtx.createGain();
+
+        synthOsc.type = 'sawtooth';
+        synthOsc.frequency.setValueAtTime(65.41, audioCtx.currentTime); // C2 low bass pulse
+
+        synthGain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+
+        synthOsc.connect(synthGain);
+        synthGain.connect(audioCtx.destination);
+        synthOsc.start();
+
+        // Pulsate synth and state.audioPulse periodically
+        let beat = 0;
+        audioInterval = setInterval(() => {
+          if (!state.audioEnabled) return;
+          beat++;
+          const now = audioCtx ? audioCtx.currentTime : 0;
+          if (synthGain && audioCtx) {
+            synthGain.gain.cancelScheduledValues(now);
+            synthGain.gain.setValueAtTime(0.12, now);
+            synthGain.gain.exponentialRampToValueAtTime(0.01, now + 0.22);
+          }
+          if (synthOsc && audioCtx) {
+            const freqs = [65.41, 73.42, 87.31, 98.00];
+            synthOsc.frequency.setValueAtTime(freqs[beat % freqs.length], now);
+          }
+          state.audioPulse = 1.0;
+        }, 500); // 120 BPM tempo pulse
+      } catch (e) {
+        console.warn('Audio synthesis not permitted or failed:', e);
+      }
+    }
+
+    function stopAudioSynth() {
+      if (audioInterval) clearInterval(audioInterval);
+      if (synthOsc) {
+        try { synthOsc.stop(); synthOsc.disconnect(); } catch (e) {}
+        synthOsc = null;
+      }
+      if (synthGain) {
+        try { synthGain.disconnect(); } catch (e) {}
+        synthGain = null;
+      }
+    }
+
+    // --- UI Update Helpers ---
+    function updateCoordsHUD() {
+      coordsBadge.textContent = `X:${state.panX.toFixed(2)} Y:${state.panY.toFixed(2)} Z:${Math.round(state.p1)}`;
+    }
+
+    function showError(msg) {
+      state.error = msg;
+      errorMsg.textContent = msg;
+      errorToast.classList.add('visible');
+    }
+
+    function hideError() {
+      state.error = null;
+      errorToast.classList.remove('visible');
+    }
+
+    errorClose.addEventListener('click', hideError);
+
+    // --- Populate Preset Menu ---
+    PRESETS.forEach((preset) => {
+      const item = document.createElement('div');
+      item.className = `preset-item ${preset.id === state.activePreset.id ? 'active' : ''}`;
+      item.innerHTML = `
+        <div class="preset-item-title">${preset.name}</div>
+        <div class="preset-item-category">${preset.category}</div>
+      `;
+      item.addEventListener('click', () => {
+        selectPreset(preset);
+        presetMenu.classList.remove('open');
+      });
+      presetMenu.appendChild(item);
+    });
+
+    presetBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      presetMenu.classList.toggle('open');
+    });
+
+    document.addEventListener('click', () => {
+      presetMenu.classList.remove('open');
+    });
+
+    function selectPreset(preset) {
+      state.activePreset = preset;
+      presetName.textContent = preset.name;
+      state.p1 = preset.defaultP1;
+      state.p2 = preset.defaultP2;
+      state.p3 = preset.defaultP3;
+      state.panX = 0.0;
+      state.panY = 0.0;
+
+      sliderP1.value = state.p1;
+      valP1.textContent = Math.round(state.p1);
+      sliderP2.value = state.p2;
+      valP2.textContent = Math.round(state.p2);
+      sliderP3.value = state.p3;
+      valP3.textContent = Math.round(state.p3);
+
+      state.editableCode = preset.fragmentShader.trim();
+      glslTextarea.value = state.editableCode;
+
+      document.querySelectorAll('.preset-item').forEach((el, idx) => {
+        el.classList.toggle('active', PRESETS[idx].id === preset.id);
+      });
+
+      initShaderProgram(preset.fragmentShader);
+      updateCoordsHUD();
+    }
+
+    // --- Info Modal ---
+    infoBtn.addEventListener('click', () => infoModal.classList.add('open'));
+    modalCloseBtn.addEventListener('click', () => infoModal.classList.remove('open'));
+    infoModal.addEventListener('click', (e) => {
+      if (e.target === infoModal) infoModal.classList.remove('open');
+    });
+
+    // --- Play / Pause ---
+    btnPlayPause.addEventListener('click', () => {
+      state.isRunning = !state.isRunning;
+      if (state.isRunning) {
+        btnPlayPause.classList.add('running');
+        playPauseText.textContent = 'PAUSE';
+        playPauseIcon.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
+        pausedBanner.classList.remove('visible');
+      } else {
+        btnPlayPause.classList.remove('running');
+        playPauseText.textContent = 'START';
+        playPauseIcon.innerHTML = '<path d="M8 5v14l11-7z"/>';
+        pausedBanner.classList.add('visible');
+      }
+    });
+
+    // --- Reset ---
+    btnReset.addEventListener('click', () => {
+      state.p1 = state.activePreset.defaultP1;
+      state.p2 = state.activePreset.defaultP2;
+      state.p3 = state.activePreset.defaultP3;
+      state.panX = 0.0;
+      state.panY = 0.0;
+
+      sliderP1.value = state.p1;
+      valP1.textContent = Math.round(state.p1);
+      sliderP2.value = state.p2;
+      valP2.textContent = Math.round(state.p2);
+      sliderP3.value = state.p3;
+      valP3.textContent = Math.round(state.p3);
+
+      updateCoordsHUD();
+    });
+
+    // --- Audio Toggle ---
+    btnAudio.addEventListener('click', toggleAudio);
+
+    // --- Sliders ---
+    sliderP1.addEventListener('input', (e) => {
+      state.p1 = parseFloat(e.target.value);
+      valP1.textContent = Math.round(state.p1);
+      updateCoordsHUD();
+    });
+
+    sliderP2.addEventListener('input', (e) => {
+      state.p2 = parseFloat(e.target.value);
+      valP2.textContent = Math.round(state.p2);
+    });
+
+    sliderP3.addEventListener('input', (e) => {
+      state.p3 = parseFloat(e.target.value);
+      valP3.textContent = Math.round(state.p3);
+    });
+
+    // --- Visual / Code Mode Toggle ---
+    modeToggleBtn.addEventListener('click', () => {
+      state.showCode = !state.showCode;
+      if (state.showCode) {
+        modeToggleBtn.classList.add('active');
+        modeText.textContent = 'VISUAL';
+        codePanel.classList.add('visible');
+      } else {
+        modeToggleBtn.classList.remove('active');
+        modeText.textContent = 'CODE';
+        codePanel.classList.remove('visible');
+      }
+    });
+
+    // Code Editor Tabs
+    codeTabs.forEach((tab) => {
+      tab.addEventListener('click', () => {
+        codeTabs.forEach((t) => t.classList.remove('active'));
+        tab.classList.add('active');
+        state.activeCodeTab = tab.dataset.tab;
+
+        if (state.activeCodeTab === 'draw') {
+          glslTextarea.value = state.editableCode;
+          glslTextarea.readOnly = false;
+          codeStatus.textContent = 'Live GLSL Editor';
+        } else if (state.activeCodeTab === 'init') {
+          glslTextarea.value = `// Vertex Shader Source:\n${VERTEX_SHADER_SRC.trim()}\n\n// Uniform Configuration:\n// u_res: Screen Resolution\n// u_time: Elapsed Seconds\n// u_p1: Zoom Power\n// u_p2: Color Cycling\n// u_p3: Morphing Constant\n// u_pan: 2D Coordinates\n// u_audio: Beat Reactivity`;
+          glslTextarea.readOnly = true;
+          codeStatus.textContent = 'Read-Only Spec';
+        } else if (state.activeCodeTab === 'update') {
+          glslTextarea.value = `// Animation loop execution:\nstate.time += dt;\nu_p1 = params.p1;\nu_p2 = params.p2;\nu_p3 = params.p3;\nu_pan = vec2(params.panX, params.panY);\nu_audio = audioPulse;`;
+          glslTextarea.readOnly = true;
+          codeStatus.textContent = 'Read-Only Spec';
+        }
+      });
+    });
+
+    glslTextarea.addEventListener('input', () => {
+      if (state.activeCodeTab === 'draw') {
+        state.editableCode = glslTextarea.value;
+      }
+    });
+
+    codeApplyBtn.addEventListener('click', () => {
+      if (state.activeCodeTab === 'draw') {
+        initShaderProgram(glslTextarea.value);
+      }
+    });
+
+    codeRevertBtn.addEventListener('click', () => {
+      state.editableCode = state.activePreset.fragmentShader.trim();
+      glslTextarea.value = state.editableCode;
+      initShaderProgram(state.editableCode);
+    });
+
+    // --- Interactive Pan & Zoom Gestures ---
+    let isDragging = false;
+    let lastMousePos = { x: 0, y: 0 };
+    let initialPinchDist = null;
+    let initialP1 = state.p1;
+
+    canvas.addEventListener('mousedown', (e) => {
+      isDragging = true;
+      lastMousePos = { x: e.clientX, y: e.clientY };
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      const dx = e.clientX - lastMousePos.x;
+      const dy = e.clientY - lastMousePos.y;
+      lastMousePos = { x: e.clientX, y: e.clientY };
+
+      const minDim = Math.min(canvas.clientWidth, canvas.clientHeight);
+      const zoom = Math.pow(1.08, state.p1);
+      const sensitivity = 3.5 / (zoom * minDim);
+
+      state.panX -= dx * sensitivity;
+      state.panY += dy * sensitivity;
+      updateCoordsHUD();
+    });
+
+    window.addEventListener('mouseup', () => {
+      isDragging = false;
+    });
+
+    // Mouse Wheel Zoom
+    canvas.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const delta = e.deltaY < 0 ? 1.5 : -1.5;
+      state.p1 = Math.max(0, Math.min(100, state.p1 + delta));
+      sliderP1.value = state.p1;
+      valP1.textContent = Math.round(state.p1);
+      updateCoordsHUD();
+    }, { passive: false });
+
+    // Touch Support (Pan & Pinch)
+    canvas.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 1) {
+        isDragging = true;
+        lastMousePos = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      } else if (e.touches.length === 2) {
+        isDragging = false;
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        initialPinchDist = Math.hypot(dx, dy);
+        initialP1 = state.p1;
+      }
+    }, { passive: true });
+
+    canvas.addEventListener('touchmove', (e) => {
+      if (e.touches.length === 1 && isDragging) {
+        const dx = e.touches[0].clientX - lastMousePos.x;
+        const dy = e.touches[0].clientY - lastMousePos.y;
+        lastMousePos = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+
+        const minDim = Math.min(canvas.clientWidth, canvas.clientHeight);
+        const zoom = Math.pow(1.08, state.p1);
+        const sensitivity = 3.5 / (zoom * minDim);
+
+        state.panX -= dx * sensitivity;
+        state.panY += dy * sensitivity;
+        updateCoordsHUD();
+      } else if (e.touches.length === 2 && initialPinchDist) {
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        const currentDist = Math.hypot(dx, dy);
+        const scale = currentDist / initialPinchDist;
+
+        const zoomDelta = (scale - 1.0) * 25.0;
+        state.p1 = Math.max(0, Math.min(100, initialP1 + zoomDelta));
+        sliderP1.value = state.p1;
+        valP1.textContent = Math.round(state.p1);
+        updateCoordsHUD();
+      }
+    }, { passive: true });
+
+    canvas.addEventListener('touchend', (e) => {
+      if (e.touches.length === 0) {
+        isDragging = false;
+        initialPinchDist = null;
+      } else if (e.touches.length === 1) {
+        isDragging = true;
+        lastMousePos = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        initialPinchDist = null;
+      }
+    });
+
+    // --- Main Render Loop ---
+    let lastTimestamp = performance.now();
+
+    function render(timestamp) {
+      const dt = (timestamp - lastTimestamp) / 1000.0;
+      lastTimestamp = timestamp;
+
+      if (state.isRunning) {
+        state.time += dt;
+      }
+
+      // Smooth decay for audio reactivity pulse
+      if (state.audioPulse > 0.001) {
+        state.audioPulse *= Math.pow(0.04, dt);
+      } else {
+        state.audioPulse = 0.0;
+      }
+
+      if (gl && currentProgram) {
+        gl.viewport(0, 0, canvas.width, canvas.height);
+        gl.useProgram(currentProgram);
+
+        if (uniformLocs.res) gl.uniform2f(uniformLocs.res, canvas.width, canvas.height);
+        if (uniformLocs.time) gl.uniform1f(uniformLocs.time, state.time);
+        if (uniformLocs.p1) gl.uniform1f(uniformLocs.p1, state.p1);
+        if (uniformLocs.p2) gl.uniform1f(uniformLocs.p2, state.p2);
+        if (uniformLocs.p3) gl.uniform1f(uniformLocs.p3, state.p3);
+        if (uniformLocs.pan) gl.uniform2f(uniformLocs.pan, state.panX, state.panY);
+        if (uniformLocs.audio) gl.uniform1f(uniformLocs.audio, state.audioPulse);
+
+        gl.drawArrays(gl.TRIANGLES, 0, 6);
+      }
+
+      requestAnimationFrame(render);
+    }
+
+    requestAnimationFrame(render);
+  </script>
+</body>
+</html>

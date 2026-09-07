@@ -1,0 +1,6 @@
+{
+  "name": "0oo0 Fractals",
+  "description": "0oo0 Fractal Engine - Real-time GPU fractal shader sandbox with GLSL live coding, deep panning, zoom, audio pulse, and presets.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

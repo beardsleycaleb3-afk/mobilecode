@@ -1,0 +1,708 @@
+/* 0oo0 Fractal Engine - Stylesheet */
+/* Target Viewport: 350x720 (Smartphone Portrait) · Render Resolution: 720x1440 */
+
+:root {
+  --bg-dark: #05070e;
+  --bg-header: #090d16;
+  --bg-card: #111827;
+  --bg-control: rgba(9, 13, 22, 0.95);
+  --border: #1f2937;
+  --border-subtle: #374151;
+  --fuchsia: #d946ef;
+  --fuchsia-light: #e879f9;
+  --fuchsia-dark: #86198f;
+  --fuchsia-glow: rgba(217, 70, 239, 0.35);
+  --cyan: #06b6d4;
+  --emerald: #10b981;
+  --emerald-bg: rgba(16, 185, 129, 0.15);
+  --emerald-border: rgba(16, 185, 129, 0.4);
+  --amber: #f59e0b;
+  --amber-bg: rgba(245, 158, 11, 0.15);
+  --amber-border: rgba(245, 158, 11, 0.4);
+  --purple: #a855f7;
+  --purple-bg: rgba(168, 85, 247, 0.15);
+  --purple-border: rgba(168, 85, 247, 0.4);
+  --text-primary: #f3f4f6;
+  --text-secondary: #9ca3af;
+  --text-muted: #6b7280;
+  --code-green: #4ade80;
+  --error-red: #ef4444;
+  --error-bg: rgba(69, 10, 10, 0.9);
+  
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: #000000;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  touch-action: none;
+  -webkit-touch-callout: none;
+}
+
+/* Smartphone Viewport Shell (350x720 aspect) */
+#app-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  max-width: 440px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg-dark);
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.8);
+  overflow: hidden;
+}
+
+/* Top Header Bar */
+#top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background-color: var(--bg-header);
+  border-bottom: 1px solid var(--border);
+  z-index: 20;
+  height: 52px;
+  flex-shrink: 0;
+}
+
+.brand-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.live-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background-color: var(--fuchsia);
+  box-shadow: 0 0 8px var(--fuchsia);
+  animation: pulse-glow 1.6s infinite alternate ease-in-out;
+}
+
+@keyframes pulse-glow {
+  0% { opacity: 0.35; transform: scale(0.9); }
+  100% { opacity: 1; transform: scale(1.15); }
+}
+
+.brand-title {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--fuchsia-light);
+}
+
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Touch Pills & Buttons */
+.touch-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 34px;
+  padding: 0 10px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-subtle);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: transform 0.1s, background-color 0.15s, border-color 0.15s;
+}
+
+.touch-btn:active {
+  transform: scale(0.95);
+  border-color: var(--fuchsia);
+  background: rgba(217, 70, 239, 0.15);
+  color: #ffffff;
+}
+
+.touch-icon-btn {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: 8px;
+}
+
+.touch-btn.accent {
+  background: var(--fuchsia-dark);
+  color: #ffffff;
+  border-color: var(--fuchsia);
+}
+
+/* Main Viewport Container */
+#viewport-container {
+  position: relative;
+  flex: 1;
+  width: 100%;
+  background: var(--bg-dark);
+  overflow: hidden;
+  touch-action: none;
+}
+
+/* WebGL Canvas - Buffer 720x1440 */
+#fractal-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+}
+
+/* Gesture Hints & Readouts */
+.floating-badge {
+  position: absolute;
+  padding: 5px 9px;
+  background: rgba(5, 7, 14, 0.82);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  pointer-events: none;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 10;
+}
+
+#hint-badge {
+  top: 10px;
+  left: 10px;
+  color: var(--text-secondary);
+}
+
+#coords-badge {
+  top: 10px;
+  right: 10px;
+  color: var(--cyan);
+  font-weight: 600;
+}
+
+#pause-badge {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 10px 18px;
+  background: rgba(5, 7, 14, 0.9);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  pointer-events: none;
+  z-index: 10;
+  display: none;
+}
+
+#pause-badge.visible {
+  display: block;
+}
+
+/* Error Banner */
+#error-banner {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--error-bg);
+  border-top: 1px solid var(--error-red);
+  padding: 8px 12px;
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  z-index: 15;
+}
+
+#error-banner.visible {
+  display: flex;
+}
+
+#error-text {
+  color: #ffcdd2;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 14px;
+  max-height: 42px;
+  overflow-y: auto;
+  word-break: break-word;
+}
+
+#dismiss-error {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--error-red);
+  font-size: 16px;
+  font-weight: bold;
+}
+
+/* Bottom Control Deck */
+#control-deck {
+  background: var(--bg-control);
+  border-top: 1px solid var(--border);
+  padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 20;
+  flex-shrink: 0;
+}
+
+.action-row {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr 1.1fr;
+  gap: 8px;
+}
+
+.action-btn {
+  height: 44px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  font-family: var(--font-mono);
+  border: 1px solid transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: transform 0.1s;
+}
+
+.action-btn:active {
+  transform: scale(0.96);
+}
+
+#btn-play-pause {
+  background: var(--emerald-bg);
+  color: var(--emerald);
+  border-color: var(--emerald-border);
+}
+
+#btn-play-pause.paused {
+  background: var(--amber-bg);
+  color: var(--amber);
+  border-color: var(--amber-border);
+}
+
+#btn-reset {
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  border-color: var(--border-subtle);
+}
+
+#btn-audio {
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  border-color: var(--border-subtle);
+}
+
+#btn-audio.active {
+  background: var(--purple-bg);
+  color: var(--purple);
+  border-color: var(--purple-border);
+}
+
+/* Touch Sliders Container */
+.sliders-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 8px 10px;
+  display: flex;
+  gap: 8px;
+}
+
+.slider-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.slider-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.slider-label {
+  color: var(--text-secondary);
+}
+
+.slider-val {
+  color: var(--fuchsia-light);
+}
+
+/* Smartphone Custom Touch Slider Track */
+.touch-slider-track {
+  position: relative;
+  width: 100%;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  touch-action: none;
+  cursor: pointer;
+}
+
+.touch-slider-bar {
+  width: 100%;
+  height: 6px;
+  background: var(--border-subtle);
+  border-radius: 3px;
+  position: relative;
+  overflow: hidden;
+}
+
+.touch-slider-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 50%;
+  background: var(--fuchsia);
+  border-radius: 3px;
+}
+
+.touch-slider-thumb {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 0 6px var(--fuchsia);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  transition: transform 0.05s;
+}
+
+/* Code Editor View (Touch First) */
+#code-editor-view {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--bg-dark);
+  display: none;
+  flex-direction: column;
+  z-index: 12;
+}
+
+#code-editor-view.visible {
+  display: flex;
+}
+
+.editor-tabs-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 8px;
+  background: var(--bg-header);
+  border-bottom: 1px solid var(--border);
+  height: 38px;
+  flex-shrink: 0;
+}
+
+.tab-buttons {
+  display: flex;
+  gap: 4px;
+}
+
+.tab-btn {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 8px 10px;
+  cursor: pointer;
+}
+
+.tab-btn.active {
+  color: var(--fuchsia-light);
+  border-bottom-color: var(--fuchsia);
+  background: rgba(217, 70, 239, 0.08);
+}
+
+.editor-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.editor-btn {
+  height: 26px;
+  padding: 0 8px;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.editor-btn.primary {
+  background: var(--fuchsia);
+  color: #ffffff;
+  border-color: var(--fuchsia);
+}
+
+/* Touch Quick Insert Toolbar for Smartphone (No physical keyboard needed) */
+.touch-code-toolbar {
+  display: flex;
+  gap: 6px;
+  padding: 6px 8px;
+  background: #0d121c;
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
+}
+
+.code-chip {
+  display: inline-block;
+  padding: 4px 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  color: var(--cyan);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.code-chip:active {
+  background: var(--cyan);
+  color: #000;
+}
+
+.editor-textarea-container {
+  flex: 1;
+  padding: 10px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+#code-textarea {
+  flex: 1;
+  width: 100%;
+  background: #090e18;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--code-green);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 16px;
+  padding: 8px;
+  resize: none;
+  outline: none;
+  user-select: text;
+  -webkit-user-select: text;
+  tab-size: 2;
+  white-space: pre;
+  overflow: auto;
+}
+
+/* Presets Bottom Sheet */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: none;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 50;
+}
+
+.modal-overlay.visible {
+  display: flex;
+}
+
+.bottom-sheet {
+  width: 100%;
+  max-width: 440px;
+  background: var(--bg-header);
+  border-top: 1px solid var(--border);
+  border-radius: 20px 20px 0 0;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: slide-up 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slide-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.sheet-handle {
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border-subtle);
+  margin: 10px auto 4px;
+}
+
+.sheet-header {
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sheet-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--fuchsia-light);
+}
+
+.preset-list {
+  padding: 8px 12px 24px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.preset-card {
+  padding: 12px;
+  border-radius: 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: border-color 0.15s, background-color 0.15s;
+}
+
+.preset-card.active {
+  border-color: var(--fuchsia);
+  background: rgba(217, 70, 239, 0.12);
+}
+
+.preset-card:active {
+  transform: scale(0.98);
+}
+
+.preset-card-title {
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.preset-card-cat {
+  font-size: 9px;
+  color: var(--cyan);
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+}
+
+.preset-card-desc {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+  line-height: 15px;
+}
+
+/* Info Dialog */
+.dialog-box {
+  width: 90%;
+  max-width: 380px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 18px;
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.9);
+}
+
+.dialog-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--fuchsia-light);
+}
+
+.dialog-content {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 18px;
+  max-height: 60vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dialog-content ul {
+  padding-left: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dialog-content strong {
+  color: var(--text-primary);
+}
+
+.dialog-btn {
+  height: 40px;
+  border-radius: 8px;
+  background: var(--fuchsia);
+  color: #ffffff;
+  border: none;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
